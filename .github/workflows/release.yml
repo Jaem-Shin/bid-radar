@@ -1,0 +1,110 @@
+# 릴리스는 manifest 버전으로 정한다:
+#   products/<제품>/manifest.json 의 version 을 올려 main 에 푸시하면, 그 버전 릴리스가 아직 없을 때만
+#   1) 테스트 → 빌드·패킹
+#   2) 릴리스 <제품>-v<버전> (태그 포함) 생성: core.mjs · release.json · <이름>-<버전>.mcpb
+#   3) 업데이트 채널 <제품>-channel 의 latest.json 을 새 버전으로 교체
+# Actions 탭의 "Run workflow"로 수동 실행해도 같다(이미 있는 버전은 건너뜀).
+# 서명(release.json.sig)은 여기서 하지 않는다 — 개발자 PC의 scripts/sign-release.cmd 로 서명해 올려야
+# 설치된 PC의 자동 업데이트가 그 버전을 받아들인다(서명 키는 GitHub에 두지 않는다).
+name: release
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    # 배포는 공개 저장소에서만(비공개 개발 저장소에서는 건너뜀)
+    if: github.repository == 'Jaem-Shin/bid-radar'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        product: [g2b, d2b]
+    env:
+      GH_TOKEN: ${{ github.token }}
+      P: ${{ matrix.product }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 버전 확인 — 이미 릴리스가 있으면 건너뜀
+        id: v
+        run: |
+          N=$(node -p "require('./products/$P/manifest.json').name")
+          V=$(node -p "require('./products/$P/manifest.json').version")
+          TAG="$P-v$V"
+          echo "name=$N" >> "$GITHUB_OUTPUT"
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          if gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "$TAG 릴리스가 이미 있습니다 — 건너뜀"
+            echo "new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "new=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.v.outputs.new == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - if: steps.v.outputs.new == 'true'
+        run: npm ci
+      - if: steps.v.outputs.new == 'true'
+        run: npm test
+      - if: steps.v.outputs.new == 'true'
+        run: node scripts/build.mjs "$P" --pack
+
+      - name: 서명 공개 키 포함 확인
+        if: steps.v.outputs.new == 'true'
+        run: grep -q 'ssh-ed25519 ' "out/$P/bundle/server/index.mjs" || { echo "launcher/config.js 의 PUBKEY 가 비어 있습니다"; exit 1; }
+
+      - name: 릴리스 생성
+        if: steps.v.outputs.new == 'true'
+        env:
+          V: ${{ steps.v.outputs.version }}
+          N: ${{ steps.v.outputs.name }}
+          TAG: ${{ steps.v.outputs.tag }}
+        run: |
+          D="out/$P/dist"
+          node scripts/release-notes.mjs "$P" "$V" > notes.md
+          gh release create "$TAG" "$D/core.mjs" "$D/release.json" "$D/$N-$V.mcpb" \
+            --target "$GITHUB_SHA" \
+            --title "$N $V" \
+            --notes-file notes.md
+
+      - name: 업데이트 채널 갱신
+        if: steps.v.outputs.new == 'true'
+        run: |
+          CH="$P-channel"
+          if ! gh release view "$CH" >/dev/null 2>&1; then
+            gh release create "$CH" --prerelease --target "$GITHUB_SHA" --title "$P 자동 업데이트 채널" \
+              --notes "자동 업데이트용입니다. 설치 파일은 위의 버전별 릴리스에서 받으세요."
+          fi
+          gh release upload "$CH" "out/$P/dist/latest.json" --clobber
+
+  # 모든 버전 릴리스의 본문을 현재 안내 문구(scripts/release-notes.mjs)로 맞춘다 — 안내를 고치면 지난 릴리스에도 반영
+  notes:
+    needs: release
+    if: github.repository == 'Jaem-Shin/bid-radar'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 릴리스 본문 갱신
+        run: |
+          for TAG in $(gh release list --limit 200 --json tagName -q '.[].tagName'); do
+            case "$TAG" in g2b-v*|d2b-v*) ;; *) continue ;; esac
+            P="${TAG%%-v*}"; V="${TAG#*-v}"
+            node scripts/release-notes.mjs "$P" "$V" > notes.md
+            gh release edit "$TAG" --notes-file notes.md
+            echo "$TAG 본문 갱신"
+          done

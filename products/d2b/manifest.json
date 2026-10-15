@@ -1,0 +1,136 @@
+{
+  "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/mcpb/main/dist/mcpb-manifest-v0.3.schema.json",
+  "manifest_version": "0.3",
+  "name": "d2b-bid-radar",
+  "display_name": "D2B Bid Radar (국방전자조달)",
+  "version": "1.0.0",
+  "description": "방위사업청 국방전자조달(D2B) 시설 공사·용역의 조달계획·입찰공고·입찰결과·계약 조회 — 본인 공공데이터포털 인증키로 동작",
+  "long_description": "공공데이터포털 인증키 하나로 방위사업청 군수품조달정보 조달계획·입찰공고·입찰결과·계약정보(_GW) 서비스를 조회합니다. 시설(공사·용역) 분야 중심이며, 공사번호로 계획→공고→결과→계약을 정확히 연결합니다. 모든 결과는 API 원자료이고, 계산한 값은 '(계산)'으로 구분하며, 데이터가 없으면 [NOT_FOUND]로 답합니다. 참가 가능 여부는 판정하지 않습니다. 개발 중(0.0.x)이라 진단 도구(d2b_raw)가 포함돼 있습니다.",
+  "author": {
+    "name": "신재민 (Jaem-Shin)",
+    "url": "https://github.com/Jaem-Shin"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Jaem-Shin/bid-radar"
+  },
+  "homepage": "https://github.com/Jaem-Shin/bid-radar",
+  "support": "https://github.com/Jaem-Shin/bid-radar/issues",
+  "icon": "icon.png",
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.mjs",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/server/index.mjs"
+      ],
+      "env": {
+        "DATA_GO_KR_SERVICE_KEY": "${user_config.service_key}",
+        "MY_BIZNO": "${user_config.my_bizno}",
+        "AUTO_UPDATE": "${user_config.auto_update}"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "d2b_check_setup",
+      "description": "인증키와 방위사업청 군수품조달정보 4개 서비스(조달계획·입찰공고·입찰결과·계약정보)의 활용승인 상태를 점검한다"
+    },
+    {
+      "name": "d2b_search_bids",
+      "description": "D2B 시설(공사·용역) 경쟁입찰공고와 공개수의협상계획을 검색한다"
+    },
+    {
+      "name": "d2b_bid_detail",
+      "description": "D2B 시설 입찰공고 1건의 상세(공사개요·금액·사정률·면허·지역 제한·일정)"
+    },
+    {
+      "name": "d2b_plans",
+      "description": "D2B 시설 조달계획(발주 예정 사업)을 발주예정월 기준으로 조회한다"
+    },
+    {
+      "name": "d2b_search_results",
+      "description": "D2B 시설 경쟁입찰결과를 개찰일 기준으로 검색한다"
+    },
+    {
+      "name": "d2b_bid_result",
+      "description": "D2B 시설 입찰 1건의 낙찰업체·참가업체 순위표·복수예비가격"
+    },
+    {
+      "name": "d2b_contracts",
+      "description": "D2B 시설 계약정보(계약업체·금액·낙찰률·계약기간)를 계약일 기준으로 검색한다"
+    },
+    {
+      "name": "d2b_project",
+      "description": "공사번호 기준으로 조달계획→입찰공고→입찰결과→계약 연혁을 이어서 보여준다"
+    },
+    {
+      "name": "d2b_keywords",
+      "description": "관심 키워드 보기·추가·삭제(G2B·D2B 공통, 전 기관 대상)"
+    },
+    {
+      "name": "d2b_briefing",
+      "description": "관심 키워드로 새 경쟁입찰·마감 전 공개수의 모아 보기"
+    },
+    {
+      "name": "d2b_deadlines",
+      "description": "관심 키워드 공고의 참가등록·입찰서·개찰·견적서 마감 일정을 D-day 순으로"
+    },
+    {
+      "name": "d2b_eligibility",
+      "description": "공고 면허 목록을 회사 등록업종과 대조"
+    },
+    {
+      "name": "d2b_update",
+      "description": "D2B Bid Radar 새 버전을 지금 확인해 받아 둔다(서명 검증, 재시작 시 적용)"
+    },
+    {
+      "name": "d2b_update",
+      "description": "D2B Bid Radar 새 버전을 지금 확인해 받아 둔다(서명 검증, 재시작 시 적용)"
+    }
+  ],
+  "user_config": {
+    "service_key": {
+      "type": "string",
+      "title": "공공데이터포털 인증키",
+      "description": "공공데이터포털 마이페이지의 '일반 인증키(Decoding)'. 방위사업청_군수품조달정보 조달계획·입찰공고·입찰결과·계약정보(_GW) 활용승인이 필요합니다.",
+      "sensitive": true,
+      "required": true
+    },
+    "my_bizno": {
+      "type": "string",
+      "title": "회사 사업자번호 (선택)",
+      "description": "10자리. 참가업체 순위표·낙찰업체에서 우리 회사 표시에 사용",
+      "required": false,
+      "default": ""
+    },
+    "auto_update": {
+      "type": "boolean",
+      "title": "자동 업데이트",
+      "description": "GitHub(Jaem-Shin/bid-radar)의 서명된 새 버전을 받아 다음 Claude 시작 때 적용",
+      "default": true,
+      "required": false
+    }
+  },
+  "compatibility": {
+    "platforms": [
+      "win32",
+      "darwin",
+      "linux"
+    ],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  },
+  "keywords": [
+    "국방전자조달",
+    "D2B",
+    "방위사업청",
+    "시설공사",
+    "설계용역",
+    "입찰공고",
+    "공공데이터"
+  ],
+  "license": "MIT"
+}

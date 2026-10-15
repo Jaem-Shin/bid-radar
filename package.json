@@ -1,0 +1,40 @@
+{
+  "name": "bid-radar",
+  "version": "0.0.0",
+  "description": "나라장터(G2B)·국방전자조달(D2B) 입찰정보 MCP — G2B Bid Radar / D2B Bid Radar",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "build": "node scripts/build.mjs all",
+    "pack": "node scripts/build.mjs all --pack",
+    "dev": "node scripts/dev.mjs"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@anthropic-ai/mcpb": "^2.1.2",
+    "esbuild": "^0.28.2"
+  },
+  "type": "module",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Jaem-Shin/bid-radar"
+  },
+  "bin": {
+    "bid-radar": "bin/bid-radar.mjs"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "products/g2b/manifest.json",
+    "products/d2b/manifest.json",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}

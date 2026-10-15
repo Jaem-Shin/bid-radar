@@ -1,0 +1,136 @@
+{
+  "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/mcpb/main/dist/mcpb-manifest-v0.3.schema.json",
+  "manifest_version": "0.3",
+  "name": "g2b-bid-radar",
+  "display_name": "G2B Bid Radar (나라장터)",
+  "version": "1.0.0",
+  "description": "조달청 나라장터 입찰공고·낙찰·사전규격·조달업체 조회 — 본인 공공데이터포털 인증키로 동작",
+  "long_description": "공공데이터포털에서 발급받은 인증키 하나로 나라장터 입찰공고정보·낙찰정보·사전규격정보·사용자정보 서비스를 조회합니다. 모든 결과는 API 원자료이며, 원자료로 계산한 값은 '(계산)'으로 구분하고, 출처·조회시각·나라장터 원문 링크를 붙입니다. 데이터가 없으면 [NOT_FOUND]로 답하고, 같은 항목이 오퍼레이션마다 다르면 '불일치'로 표시합니다. 참가 가능 여부는 판정하지 않고 원자료만 제시합니다. 4개 서비스 중 활용승인된 것만으로도 동작하며, g2b_check_setup 도구로 승인 상태를 확인할 수 있습니다.",
+  "author": {
+    "name": "신재민 (Jaem-Shin)",
+    "url": "https://github.com/Jaem-Shin"
+  },
+  "icon": "icon.png",
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.mjs",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/server/index.mjs"
+      ],
+      "env": {
+        "DATA_GO_KR_SERVICE_KEY": "${user_config.service_key}",
+        "MY_BIZNO": "${user_config.my_bizno}",
+        "AUTO_UPDATE": "${user_config.auto_update}"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "g2b_check_setup",
+      "description": "인증키와 4개 서비스(입찰공고·낙찰·사전규격·사용자정보)의 활용승인 상태를 점검한다"
+    },
+    {
+      "name": "g2b_search_bids",
+      "description": "나라장터 입찰공고를 조건으로 검색한다(나라장터 검색조건 오퍼레이션)"
+    },
+    {
+      "name": "g2b_bid_detail",
+      "description": "입찰공고번호 하나로 공고 원문 정보(기관·방식·금액·일정)와 기초금액, 면허(업종)제한, 참가가능지역, 첨부파일, 연결번호를 한 카드로 보여준다"
+    },
+    {
+      "name": "g2b_bid_changes",
+      "description": "입찰공고의 변경이력(변경일시·변경항목·변경 전/후 값)을 시간순으로 보여준다"
+    },
+    {
+      "name": "g2b_bid_result",
+      "description": "입찰공고번호로 개찰결과를 집행(차수·분류·재입찰) 단위로 보여준다: 진행상태(개찰완료/유찰/재입찰), 최종낙찰업체·금액·낙찰률, 예정가격·기초금액, 개찰순위표, 유찰·재입찰 사유"
+    },
+    {
+      "name": "g2b_search_awards",
+      "description": "최종낙찰 목록을 조건으로 검색한다(나라장터 검색조건 오퍼레이션)"
+    },
+    {
+      "name": "g2b_search_prespecs",
+      "description": "입찰공고 전에 공개되는 사전규격을 검색한다(나라장터 검색조건 오퍼레이션)"
+    },
+    {
+      "name": "g2b_company_profile",
+      "description": "나라장터 조달업체를 사업자번호로 조회한다: 업체 기본정보(상호·소재지·등록일), 등록업종(상태·유효기간), 부정당제재 이력"
+    },
+    {
+      "name": "g2b_keywords",
+      "description": "관심 키워드 보기·추가·삭제(G2B·D2B 공통, 전 기관 대상)"
+    },
+    {
+      "name": "g2b_briefing",
+      "description": "관심 키워드로 지난 브리핑 이후 새 입찰공고·사전규격 모아 보기"
+    },
+    {
+      "name": "g2b_deadlines",
+      "description": "관심 키워드 공고의 PQ·참가등록·입찰마감·개찰 일정을 D-day 순으로"
+    },
+    {
+      "name": "g2b_eligibility",
+      "description": "공고 면허 제한을 회사 등록업종과 대조(그룹별 충족 여부)"
+    },
+    {
+      "name": "g2b_update",
+      "description": "G2B Bid Radar 새 버전을 지금 확인해 받아 둔다(서명 검증, 재시작 시 적용)"
+    },
+    {
+      "name": "g2b_update",
+      "description": "G2B Bid Radar 새 버전을 지금 확인해 받아 둔다(서명 검증, 재시작 시 적용)"
+    }
+  ],
+  "user_config": {
+    "service_key": {
+      "type": "string",
+      "title": "공공데이터포털 인증키",
+      "description": "공공데이터포털 마이페이지의 '일반 인증키(Decoding)'. 입찰공고·낙찰·사전규격·사용자정보 서비스 활용승인이 필요합니다(일부만 승인돼도 해당 기능은 동작).",
+      "sensitive": true,
+      "required": true
+    },
+    "my_bizno": {
+      "type": "string",
+      "title": "회사 사업자번호 (선택)",
+      "description": "10자리. 조달업체 정보 조회 기본값, 개찰순위·낙찰 목록에서 우리 회사 표시에 사용",
+      "required": false,
+      "default": ""
+    },
+    "auto_update": {
+      "type": "boolean",
+      "title": "자동 업데이트",
+      "description": "GitHub(Jaem-Shin/bid-radar)의 서명된 새 버전을 받아 다음 Claude 시작 때 적용",
+      "default": true,
+      "required": false
+    }
+  },
+  "compatibility": {
+    "platforms": [
+      "win32",
+      "darwin",
+      "linux"
+    ],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  },
+  "keywords": [
+    "나라장터",
+    "G2B",
+    "조달청",
+    "입찰공고",
+    "낙찰",
+    "사전규격",
+    "공공데이터"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Jaem-Shin/bid-radar"
+  },
+  "homepage": "https://github.com/Jaem-Shin/bid-radar",
+  "support": "https://github.com/Jaem-Shin/bid-radar/issues"
+}
